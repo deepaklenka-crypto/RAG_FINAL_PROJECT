@@ -1,0 +1,10 @@
+# Artificial Intelligence and Retrieval-Augmented Generation (RAG)
+Retrieval-Augmented Generation (RAG) is an architectural pattern that enhances Large Language Models by fetching relevant documents from external knowledge bases before generating responses.
+
+## Key Architectures
+1. Simple RAG: Direct dense vector retrieval using approximate nearest neighbors (ANN) like HNSW in Qdrant.
+2. Hybrid RAG: Combines dense vector similarity with sparse keyword matching (BM25), fused using Reciprocal Rank Fusion (RRF).
+3. Graph RAG: Constructs an explicit knowledge graph of entities and relations, performing multi-hop reasoning and community discovery.
+
+## Multilingual Capabilities
+Modern RAG systems can process instructions in English, Hindi (हिन्दी), and generate executable Python code for enterprise analytics.

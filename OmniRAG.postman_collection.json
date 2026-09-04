@@ -1,0 +1,428 @@
+{
+  "info": {
+    "_postman_id": "a9d7e3f1-4829-4b6e-9e7f-omnirag2026",
+    "name": "OmniRAG Enterprise Platform API",
+    "description": "Complete Postman collection for OmniRAG: Multi-Format 3-Type Enterprise RAG Platform supporting Simple, Hybrid, and Graph RAG, PostgreSQL / SQLite storage, Qdrant vector search, Conversational Multi-Turn Session Memory, Multi-Level Evaluation, and Corruption Stress Testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "postman_demo_session",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. System & Health",
+      "item": [
+        {
+          "name": "Health Check & System Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Checks backend status, Qdrant vector collection count, active graph nodes/edges, and semantic cache size."
+          }
+        },
+        {
+          "name": "Get Latency & Telemetry Benchmarks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/benchmark",
+              "host": ["{{base_url}}"],
+              "path": ["api", "benchmark"]
+            },
+            "description": "Retrieves latency percentiles (P50, P95, P99), TTFT, and tokens per second throughput telemetry."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Document Ingestion",
+      "item": [
+        {
+          "name": "Upload & Index Document (PDF, CSV, XLSX, DOCX, TXT)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "./data/samples/executive_summary.pdf",
+                  "description": "Supported formats: .pdf, .csv, .xlsx, .docx, .txt"
+                },
+                {
+                  "key": "chunking_strategy",
+                  "value": "semantic",
+                  "type": "text",
+                  "description": "'recursive', 'semantic', or 'structured'"
+                },
+                {
+                  "key": "embedding_strategy",
+                  "value": "gemini",
+                  "type": "text",
+                  "description": "'gemini' or 'local'"
+                },
+                {
+                  "key": "chunk_size",
+                  "value": "500",
+                  "type": "text"
+                },
+                {
+                  "key": "chunk_overlap",
+                  "value": "100",
+                  "type": "text"
+                },
+                {
+                  "key": "extract_graph",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Extract entity-relationship triples for Graph RAG"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload"]
+            },
+            "description": "Uploads and indexes documents into Qdrant and relational database."
+          }
+        },
+        {
+          "name": "List All Indexed Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents"]
+            },
+            "description": "Returns list of all documents stored in PostgreSQL / SQLite with chunk count and status."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. RAG Querying & Synthesis",
+      "item": [
+        {
+          "name": "Query: Hybrid RAG (Dense + BM25 + RRF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What are the core differences between Simple, Hybrid, and Graph RAG?\",\n  \"rag_type\": \"hybrid\",\n  \"backend\": \"gemini\",\n  \"language\": \"en\",\n  \"mode\": \"general\",\n  \"top_k\": 4,\n  \"use_cache\": true,\n  \"compress_context\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Standard Hybrid RAG querying fusing Qdrant dense vectors and BM25 sparse lexical tokens via RRF."
+          }
+        },
+        {
+          "name": "Query: Simple RAG (Dense Vector Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What is Qdrant and how does it use HNSW vector indexing?\",\n  \"rag_type\": \"simple\",\n  \"backend\": \"gemini\",\n  \"language\": \"en\",\n  \"mode\": \"general\",\n  \"top_k\": 3,\n  \"use_cache\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Executes dense vector approximate nearest neighbor retrieval in Qdrant."
+          }
+        },
+        {
+          "name": "Query: Graph RAG (Multi-Hop Entity Traversal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"How do entities and relationships link together in the indexed documents?\",\n  \"rag_type\": \"graph\",\n  \"backend\": \"gemini\",\n  \"language\": \"en\",\n  \"mode\": \"general\",\n  \"hop_depth\": 2,\n  \"top_k\": 3,\n  \"use_cache\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Traverses 1-hop and 2-hop entity neighborhoods in NetworkX knowledge graph."
+          }
+        },
+        {
+          "name": "Query: Multilingual Hindi Generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"RAG आर्किटेक्चर के मुख्य लाभ क्या हैं?\",\n  \"rag_type\": \"hybrid\",\n  \"language\": \"hi\",\n  \"mode\": \"general\",\n  \"top_k\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Generates natural, grounded responses in fluent Hindi (Devanagari script)."
+          }
+        },
+        {
+          "name": "Query: Python Code Generation Mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Write a Python function to compute Reciprocal Rank Fusion given two ranked lists\",\n  \"rag_type\": \"hybrid\",\n  \"mode\": \"code\",\n  \"top_k\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Enforces PEP 8 compliant, type-annotated, production-ready Python code generation."
+          }
+        },
+        {
+          "name": "Query: Local Ollama Model (Qwen 2.5 / Gemma 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What are the core differences between Simple, Hybrid, and Graph RAG?\",\n  \"rag_type\": \"hybrid\",\n  \"backend\": \"ollama:qwen2.5:3b\",\n  \"language\": \"en\",\n  \"mode\": \"general\",\n  \"top_k\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Runs 100% offline inference on local laptop CPU/GPU using Ollama (qwen2.5:3b, qwen2.5vl:7b, or gemma2:2b)."
+          }
+        },
+        {
+          "name": "Query: Conversational Turn 1 (Initialize Session)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What is Qdrant?\",\n  \"rag_type\": \"hybrid\",\n  \"session_id\": \"{{session_id}}\",\n  \"top_k\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Turn 1 of a multi-turn conversational session."
+          }
+        },
+        {
+          "name": "Query: Conversational Turn 2 (Coreference Resolution)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Does it support local disk storage?\",\n  \"rag_type\": \"hybrid\",\n  \"session_id\": \"{{session_id}}\",\n  \"top_k\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "query"]
+            },
+            "description": "Turn 2: Automatically resolves the pronoun 'it' to 'Qdrant' before search retrieval."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Conversational Session Memory",
+      "item": [
+        {
+          "name": "List All Active Chat Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions"]
+            },
+            "description": "Returns list of all saved multi-turn chat sessions with message counts and timestamps."
+          }
+        },
+        {
+          "name": "Get Session Conversation History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions/{{session_id}}/history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions", "{{session_id}}", "history"]
+            },
+            "description": "Fetches chronologically ordered dialogue turns and citations for the specified session."
+          }
+        },
+        {
+          "name": "Delete / Clear Session Memory",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sessions", "{{session_id}}"]
+            },
+            "description": "Clears conversation memory and deletes persisted dialogue turns for the specified session."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Evaluation & Diagnostics",
+      "item": [
+        {
+          "name": "Multi-Level Evaluation (Prompt & Response)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"How does Qdrant perform similarity search?\",\n  \"response\": \"Qdrant uses HNSW indexing for cosine vector search.\",\n  \"context_passages\": [\n    \"Qdrant provides high performance vector search using HNSW graphs.\"\n  ],\n  \"rag_type\": \"simple\",\n  \"run_corruption_test\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/evaluate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "evaluate"]
+            },
+            "description": "Calculates prompt clarity, injection safety, response faithfulness, and hallucination rate."
+          }
+        },
+        {
+          "name": "Run Corruption Stress Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Explain Hybrid RAG\",\n  \"clean_context\": \"Hybrid RAG fuses dense vector retrieval with BM25 keyword matching via Reciprocal Rank Fusion.\",\n  \"noise_levels\": [0.0, 0.25, 0.50, 0.75]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/corruption-test",
+              "host": ["{{base_url}}"],
+              "path": ["api", "corruption-test"]
+            },
+            "description": "Simulates OCR typos, token dropping, and distractor noise to plot degradation curves and compute Robustness Score."
+          }
+        },
+        {
+          "name": "Get Knowledge Graph Topology",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/graph",
+              "host": ["{{base_url}}"],
+              "path": ["api", "graph"]
+            },
+            "description": "Returns nodes, edges, labels, and weights for the Knowledge Graph."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Optimization & Cache",
+      "item": [
+        {
+          "name": "Clear Semantic Vector Cache",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cache/clear",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cache", "clear"]
+            },
+            "description": "Flushes the in-memory semantic vector cache."
+          }
+        }
+      ]
+    }
+  ]
+}
